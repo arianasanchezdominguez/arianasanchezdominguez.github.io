@@ -1,26 +1,87 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Nombre Apellido</title>
-    <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Nombre — Proyectos y pasiones</title>
+<meta name="description" content="Un cuaderno de campo con proyectos personales, experimentos y cosas que me apasionan.">
+
+<!-- Tipografías: sustituye si prefieres otras -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <main class="container">
-        <img src="foto.jpg" alt="Foto de perfil" class="profile-pic">
+<div class="wrap">
 
-        <h1>Nombre Apellido</h1>
-        <h2>Investigadora en Sociología</h2>
+  <!-- ===================== CABECERA ===================== -->
+  <header class="site-header">
+    <span class="kicker">Cuaderno de campo</span>
+    <h1>Tu Nombre</h1>
+    <p class="tagline">
+      Aquí guardo proyectos, experimentos y cosas que me apasionan —
+      <!-- Sustituye esta línea con 1-2 frases sobre ti: a qué te dedicas, qué te interesa explorar -->
+      desde código hasta cualquier otra curiosidad que valga la pena documentar.
+    </p>
+    <nav class="site-links" aria-label="Enlaces externos">
+      <!-- Añade o quita los enlaces que quieras -->
+      <a href="https://github.com/tu-usuario" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:tu@email.com">Correo</a>
+      <a href="#" target="_blank" rel="noopener">LinkedIn</a>
+    </nav>
+  </header>
 
-        <p>
-            Socióloga con interés en <em>dinámica social</em>, 
-            <em>desigualdad</em> y <em>modelos computacionales</em>. 
-            Mi trabajo se centra en el análisis de fenómenos sociales 
-            desde una perspectiva interdisciplinaria.
-        </p>
-    </main>
+  <!-- ===================== ARCHIVO DE ENTRADAS ===================== -->
+  <p class="section-label">Archivo</p>
+
+  <ul class="archive">
+
+    <!--
+      Cada <li class="entry"> es un proyecto o pasión.
+      - El "stamp" es la fecha o el número de entrada (ej. "2026 · 01")
+      - El título enlaza a una página propia (usa proyecto-ejemplo.html como plantilla)
+      - Los tags describen el tipo de proyecto
+    -->
+
+    <li class="entry">
+      <span class="stamp">2026 · 01</span>
+      <div class="entry-body">
+        <h3><a href="proyecto-ejemplo.html">Nombre del proyecto</a></h3>
+        <p>Una frase breve que resume de qué trata este proyecto y por qué te importa.</p>
+        <p class="tags"><span>Categoría</span><span>Herramienta</span><span>Tema</span></p>
+      </div>
+    </li>
+
+    <li class="entry">
+      <span class="stamp">2025 · 09</span>
+      <div class="entry-body">
+        <h3><a href="proyecto-ejemplo.html">Otro proyecto o pasión</a></h3>
+        <p>Descripción corta. Puedes enlazar a un repositorio, un artículo o una demo.</p>
+        <p class="tags"><span>Categoría</span><span>Herramienta</span></p>
+      </div>
+    </li>
+
+    <li class="entry">
+      <span class="stamp">2025 · 04</span>
+      <div class="entry-body">
+        <h3><a href="proyecto-ejemplo.html">Tercer proyecto</a></h3>
+        <p>Descripción corta de una o dos líneas, en el mismo tono que las anteriores.</p>
+        <p class="tags"><span>Categoría</span></p>
+      </div>
+    </li>
+
+    <!-- Copia un bloque <li class="entry">…</li> completo para cada nueva entrada -->
+
+  </ul>
+
+  <footer class="site-footer">
+    <p>Tu Nombre — actualizado en 2026</p>
+  </footer>
+
+</div>
 
 </body>
 </html>
