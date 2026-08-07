@@ -224,7 +224,7 @@ button:focus-visible {
 /* ---------- Pie ---------- */
 
 .site-footer {
-  margin-top: var(--space-5);
+  margin-top: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--line);
   font-family: var(--font-mono);
