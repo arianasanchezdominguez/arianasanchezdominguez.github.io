@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nombre del proyecto — Tu Nombre</title>
-<meta name="description" content="Descripción breve del proyecto para buscadores y redes sociales.">
+<title>A Literary Map of Peru — Ariana Sánchez Domínguez</title>
+<meta name="description" content="A literary atlas that identifies and geolocates real places in Peru mentioned in national novels.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,43 +17,151 @@
 <div class="wrap">
 
   <header class="post-header">
-    <a class="back" href="index.html">&larr; Volver al archivo</a>
-    <span class="stamp">2026 · 01 — Categoría</span>
-    <h1>Nombre del proyecto</h1>
+    <a class="back" href="index.html">&larr; Back to the archive</a>
+    <span class="stamp">2026 · 01 — Literature + Computation</span>
+    <h1>A Literary Map of Peru</h1>
   </header>
 
   <article class="post-body">
 
     <p>
-      Este es el primer párrafo: explica de qué trata el proyecto, qué problema
-      resolvía o qué curiosidad te llevó a hacerlo. Escribe con tu propia voz.
+      This project identifies and geolocates real places in Peru that are
+      mentioned in national novels, along with the ways they are represented
+      by authors and their characters. From there, I build syntheses of these
+      representations, filterable by different characteristics of the novels
+      and their authors, with the goal of revealing Peru from the many
+      perspectives portrayed in its literature. The current edition focuses
+      on the novels of Mario Vargas Llosa and covers 184 unique locations and
+      over 1,600 literary references.
     </p>
 
     <p>
-      Segundo párrafo. Puedes contar cómo lo construiste, qué herramientas
-      usaste, o qué aprendiste en el camino.
+      I originally considered not limiting the project to national
+      literature, but instead working with "works published in Peru about
+      Peru" — which would include, for instance, foreign authors who had
+      lived in the country for a long time. That delimitation turned out to
+      be cumbersome to maintain, though, so for now the project is
+      restricted to works by Peruvian authors.
     </p>
 
-    <h2>Un subtítulo si el proyecto tiene varias partes</h2>
+    <h2>Why this project?</h2>
 
     <p>
-      Más contenido aquí. Si tienes imágenes, captúralas así:
+      Beyond its recreational and academic uses, what interests me most is
+      observing how different places are perceived and represented by
+      different social groups, according to variables such as age, gender,
+      place of origin, or native language. The project also makes it
+      possible to identify which spaces are more frequently featured in
+      Peruvian literature and which remain relatively unexplored — revealing,
+      in the process, a Peru that escapes official state records, and
+      helping imagine (or even reconstruct) its natural and built
+      environments, along with the meanings and emotions attached to them
+      over time.
     </p>
 
-    <figure>
-      <img src="assets/tu-imagen.jpg" alt="Descripción de la imagen">
-      <figcaption>Pie de foto opcional.</figcaption>
-    </figure>
+    <p>
+      Unlike other literary maps, which tend to focus on emblematic phrases,
+      works, or authors mostly for touristic purposes, this project aims for
+      a global collection of places. And unlike more ambitious academic
+      projects such as <em>A Literary Atlas of Europe</em>, which focuses on
+      literary analysis and on modeling narrative space in all its
+      complexity, this one is more of an inventory and mapping of real-world
+      references within literary texts.
+    </p>
+
+    <h2>Conceptual framework</h2>
 
     <p>
-      Cierra con un enlace al repositorio, a una demo en vivo, o a más
-      información: <a href="https://github.com/tu-usuario" target="_blank" rel="noopener">ver en GitHub</a>.
+      A key starting point is the distinction between a map and an atlas,
+      and the unresolved question of whether literary spaces can be
+      translated into real spaces (a controversy associated, among others,
+      with the work of Virginia Woolf). To classify how a place appears
+      within a fictional text, I draw on Barbara Piatti's (2008) proposal,
+      which distinguishes between <em>setting</em>, <em>zone of action</em>,
+      <em>projected space</em>, and <em>marker</em>, among other categories.
+    </p>
+
+    <h2>Methodology: classifying places</h2>
+
+    <p>
+      I adapted that classification into three types, each answering a
+      different question about the mentioned place:
+    </p>
+
+    <p>
+      <strong>1. Space of action ("setting").</strong> Real places where the
+      narrated action takes place — there is an event, interaction, or
+      actual presence of characters. For example: <em>"She lived in
+      Lima"</em>.
+    </p>
+
+    <p>
+      <strong>2. Projected space.</strong> Places tied to a character's
+      subjectivity — memory, desire, imagination, anticipation. The place is
+      experienced mentally, not physically. For example: <em>"He remembered
+      his childhood in Arequipa"</em>.
+    </p>
+
+    <p>
+      <strong>3. Marker.</strong> Places mentioned as contextual,
+      geographic, or narrative information, without implying direct
+      experience or subjective weight — they serve only a descriptive or
+      relational function. For example: <em>"South of Lima is Ica"</em>.
+    </p>
+
+    <p>
+      In addition, each place is classified by its spatial scale — local,
+      urban, regional, or national — with inclusion relationships that can
+      be established between them (for example, a local place within an
+      urban or regional unit).
+    </p>
+
+    <h2>Automatic place extraction</h2>
+
+    <p>
+      To detect places within the texts, I developed — together with
+      Daniel — a set of linguistic rules (presented at WTC 2025) that look
+      for two main patterns: a place indicator (such as "south of" or "in
+      front of") followed by a proper noun, or a place noun (such as
+      "hospital" or "plaza") followed by a proper noun. The proper noun can
+      extend up to three additional words, allowing the system to capture
+      cases like "La Salle School".
+    </p>
+
+    <p>
+      This first version of the code showed the kinds of errors expected
+      from any rule-based system: one- or two-letter names misread as
+      places, acronyms misinterpreted as locations, and words that had to be
+      manually excluded through a banned-words list. Documenting these
+      errors along the way has been just as important as the final result,
+      since it shapes the direction of the next versions of the system.
+    </p>
+
+    <h2>Next steps: context window</h2>
+
+    <p>
+      The first version of the code extracted only the sentence in which a
+      place was identified, which was enough for detection but limited for
+      recovering information about how that place was represented in the
+      text. For the next version, rather than relying on editorial units
+      like the paragraph — whose length varies from book to book — I plan to
+      extract the sentence in which the place appears along with the
+      sentence immediately before and after it. This approach should make it
+      possible to capture broader descriptions of space without depending on
+      each text's formal structure.
+    </p>
+
+    <p>
+      This project is still under active development — I'll keep updating
+      this page as the methodology and results evolve. If you'd like more
+      technical details or want to check out the code:
+      <a href="https://github.com/tu-usuario" target="_blank" rel="noopener">see it on GitHub</a>.
     </p>
 
   </article>
 
   <footer class="site-footer">
-    <p>Tu Nombre — actualizado en 2026</p>
+    <p>Ariana Sánchez Domínguez — updated in 2026</p>
   </footer>
 
 </div>
