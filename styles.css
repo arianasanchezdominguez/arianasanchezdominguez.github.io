@@ -1,18 +1,18 @@
 /* =============================================================
-   Sistema de diseño — Cuaderno de campo personal
-   Paleta: papel envejecido + tinta verde-negra + acento pino
+   Design system — Personal field journal
+   Palette: aged paper + dark green ink + rust-colored stamp accent
    ============================================================= */
 
 :root {
-  --paper: #ffffff;
+  --paper: #eae7dd;
   --paper-raised: #f3f1e8;
   --line: #d3cfc0;
   --ink: #20241f;
   --ink-soft: #565b50;
   --ink-faint: #8a8d80;
-  --accent: #2f6f62;       /* pino — enlaces, títulos activos */
+  --accent: #2f6f62;       /* pine — links, active titles */
   --accent-soft: #4d8c7d;
-  --stamp: #a85c2c;        /* sello — número de entrada, fechas */
+  --stamp: #a85c2c;        /* stamp — entry number, dates */
 
   --font-display: "Fraunces", "Iowan Old Style", serif;
   --font-body: "Source Serif 4", Georgia, serif;
@@ -73,10 +73,10 @@ button:focus-visible {
   padding: var(--space-4) var(--space-2) var(--space-5);
 }
 
-/* ---------- Cabecera ---------- */
+/* ---------- Header ---------- */
 
 .site-header {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-3); /* was --space-5, reduced per your request */
 }
 
 .site-header .kicker {
@@ -121,7 +121,7 @@ button:focus-visible {
 }
 .site-links a:hover { color: var(--stamp); border-color: var(--stamp); }
 
-/* ---------- Sección / divisores ---------- */
+/* ---------- Section dividers ---------- */
 
 .section-label {
   font-family: var(--font-mono);
@@ -132,7 +132,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: var(--space-3) 0 var(--space-3);
+  margin: var(--space-3) 0 var(--space-3); /* was --space-5 0 --space-3 */
 }
 .section-label::after {
   content: "";
@@ -141,7 +141,7 @@ button:focus-visible {
   background: var(--line);
 }
 
-/* ---------- Entradas del archivo (elemento distintivo) ---------- */
+/* ---------- Archive entries (the signature element) ---------- */
 
 .archive {
   list-style: none;
@@ -221,10 +221,10 @@ button:focus-visible {
   .entry .stamp { justify-self: start; }
 }
 
-/* ---------- Pie ---------- */
+/* ---------- Footer ---------- */
 
 .site-footer {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3); /* matches the gap used above "Archive", for equal spacing top and bottom */
   padding-top: var(--space-3);
   border-top: 1px solid var(--line);
   font-family: var(--font-mono);
@@ -232,7 +232,7 @@ button:focus-visible {
   color: var(--ink-faint);
 }
 
-/* ---------- Página de proyecto individual ---------- */
+/* ---------- Individual project page ---------- */
 
 .post-header {
   margin-bottom: var(--space-4);
