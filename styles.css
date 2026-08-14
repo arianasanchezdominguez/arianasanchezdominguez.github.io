@@ -278,3 +278,18 @@ button:focus-visible {
   color: var(--ink-faint);
   margin-top: 0.5em;
 }
+
+.post-body .video-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: var(--space-3) 0;
+  border: 1px solid var(--line);
+}
+.post-body .video-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
