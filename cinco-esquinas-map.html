@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinco esquinas — Interactive Map — Ariana Sánchez Domínguez</title>
+<meta name="description" content="An interactive map of the real places in Lima mentioned in Mario Vargas Llosa's Cinco esquinas, with every literary reference to each place.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- Leaflet (map library) + MarkerCluster plugin, loaded from CDN — no build step -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+<style>
+  /* ---------- Map page additions (kept local to this page) ---------- */
+
+  .post-body .lede { font-size: 1.1rem; color: var(--ink-soft); }
+
+  .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    margin: var(--space-2) 0 var(--space-4);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--line);
+  }
+  .stat-row strong { color: var(--accent); font-weight: 600; }
+
+  /* ---------- Map frame: compact by default, sidebar hidden until expanded ---------- */
+
+  .map-frame {
+    position: relative;
+    margin: var(--space-3) 0 var(--space-2);
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    box-shadow: 0 10px 26px -18px rgba(32, 36, 31, 0.35);
+  }
+
+  .map-frame .place-panel { display: none; }
+
+  .map-viewport { position: relative; }
+
+  #map {
+    height: 420px;
+    background: var(--paper-raised);
+  }
+
+  @media (max-width: 640px) {
+    #map { height: 320px; }
+  }
+
+  .map-toolbar {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    z-index: 500;
+    display: flex;
+    gap: 0.4em;
+  }
+
+  .map-btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 0.4em 0.7em;
+    border-radius: 3px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  .map-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .map-frame:not(.is-fullscreen) .btn-close { display: none; }
+  .map-frame.is-fullscreen .btn-expand { display: none; }
+
+  .map-legend {
+    position: absolute;
+    left: var(--space-1);
+    bottom: var(--space-1);
+    z-index: 500;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.5em 0.7em;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    max-width: 230px;
+  }
+  .map-legend .legend-title {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-size: 0.6rem;
+  }
+  .map-legend .row { display: flex; align-items: center; gap: 0.5em; }
+  .legend-swatch-area {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
+    background: rgba(47, 111, 98, 0.18);
+    border: 1.5px solid var(--accent);
+  }
+  .legend-swatch-point {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    margin: 0 3px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1.5px solid var(--paper);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* Fullscreen state: same DOM node repositioned via CSS, so the Leaflet
+     instance is never re-parented or re-initialized. */
+  .map-frame.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    margin: 0;
+    border: none;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+  }
+  .map-frame.is-fullscreen .place-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+    min-height: 0;
+  }
+  .map-frame.is-fullscreen #map { height: 100%; }
+
+  body.map-locked { overflow: hidden; }
+
+  @media (max-width: 760px) {
+    .map-frame.is-fullscreen { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .map-frame.is-fullscreen .place-panel {
+      max-height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  .place-search {
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .place-search input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    padding: 0.45em 0.6em;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 2px;
+  }
+  .place-search input:focus-visible {
+    outline: 2px solid var(--stamp);
+    outline-offset: 1px;
+  }
+
+  /* Sidebar tree: a flat <ul> with per-row indentation applied inline via JS
+     (depth * indent), so it mirrors the map's parent/child hierarchy. */
+  .place-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+  }
+  .place-list li { border-bottom: 1px solid var(--line); }
+  .tree-row { display: flex; align-items: stretch; }
+  .place-list .place-btn {
+    all: unset;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.6em;
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.6em var(--space-2);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .place-list .place-btn:hover,
+  .place-list .place-btn:focus-visible {
+    background: rgba(47, 111, 98, 0.08);
+    color: var(--accent);
+  }
+  .place-list .place-btn.is-active {
+    background: rgba(47, 111, 98, 0.14);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  /* Expand/collapse toggle, at the far right of a row that has children */
+  .tree-toggle {
+    all: unset;
+    flex: none;
+    width: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ink-faint);
+    font-size: 0.65rem;
+  }
+  .tree-toggle:hover, .tree-toggle:focus-visible { color: var(--accent); }
+  .place-list .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .place-list .count {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    flex: none;
+  }
+  .place-list .kind {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+    flex: none;
+    text-transform: uppercase;
+  }
+  .place-list .no-results {
+    padding: var(--space-2);
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+  }
+
+  /* Leaflet popup restyled to match the "aged paper" palette */
+  .leaflet-popup-content-wrapper {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    box-shadow: 0 10px 24px -14px rgba(32, 36, 31, 0.5);
+  }
+  .leaflet-popup-tip { background: var(--paper); border: 1px solid var(--line); }
+  .leaflet-popup-content { margin: 0.9em 1em; width: 320px !important; }
+
+  .popup-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin: 0 0 0.15em;
+  }
+  .popup-meta {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--stamp);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.6em;
+    display: block;
+  }
+  .popup-sentences {
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 0.3em;
+  }
+  .popup-sentence {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    padding: 0.5em 0;
+    border-top: 1px solid var(--line);
+  }
+  .popup-sentence:first-child { border-top: none; padding-top: 0; }
+  .popup-sentence q { font-style: italic; }
+  .popup-sentence .tag {
+    display: inline-block;
+    margin-top: 0.3em;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Drill-down popup for places with children (parent areas) */
+  .popup-children {
+    list-style: none;
+    margin: 0 0 0.6em;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .popup-children li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.35em 0;
+    border-top: 1px solid var(--line);
+  }
+  .popup-children li:first-child { border-top: none; }
+  .popup-children button {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--accent);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .popup-children button:hover { color: var(--stamp); text-decoration: underline; }
+  .popup-children .child-count {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    flex: none;
+  }
+  .popup-zoom-btn {
+    all: unset;
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    margin-top: 0.3em;
+    padding: 0.55em;
+    background: var(--accent);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    border-radius: 3px;
+  }
+  .popup-zoom-btn:hover { background: var(--stamp); }
+
+  /* Pin icon for point-tier places: Leaflet's default divIcon styling adds a
+     white box + border behind the content, which we don't want for our SVG. */
+  .leaflet-div-icon.place-pin {
+    background: transparent;
+    border: none;
+  }
+
+  /* Marker-cluster badge: pine accent, flex-centered so the count is never
+     off-kilter (the default plugin CSS assumes a <span> child we don't use). */
+  .marker-cluster-custom {
+    background: rgba(47, 111, 98, 0.25);
+  }
+  .marker-cluster-custom div {
+    background: var(--accent);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: normal;
+  }
+
+  .map-caption {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    max-width: var(--measure);
+  }
+
+  /* Embedded mode (?embed=1, used when this page is loaded inside an
+     <iframe> on another page, e.g. literary-map.html): show only the map
+     itself, not the standalone page's own header/intro/footer chrome. */
+  body.is-embedded .wrap { padding: 0; }
+  body.is-embedded .post-header,
+  body.is-embedded .post-body,
+  body.is-embedded .map-caption,
+  body.is-embedded .site-footer { display: none; }
+  body.is-embedded .map-frame { margin: 0; }
+</style>
+
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="post-header">
+    <a class="back" href="index.html">&larr; Back to the archive</a>
+    <span class="stamp">2026 · 01 — Literature + Computation</span>
+    <h1>Cinco esquinas: An Interactive Map</h1>
+  </header>
+
+  <article class="post-body">
+
+    <p class="lede">
+      Every marker below is a real place in and around Lima that is named in
+      Mario Vargas Llosa's <em>Cinco esquinas</em> (2016). Click a marker — or
+      a place in the list — to read every sentence in the novel that mentions
+      it.
+    </p>
+
+    <p>
+      This is the pilot dataset for
+      <a href="proyecto-ejemplo.html">A Literary Map of Peru</a>: place
+      mentions were first identified automatically with the rule-based
+      extractor presented at WTC 2025, then manually verified and, where
+      needed, corrected — each location below carries a
+      <span class="tags"><span>human-checked</span></span> place name,
+      coordinate pair, and area-vs-point classification. A solid dot marks one
+      precise spot (a hotel, a restaurant); a soft circle marks a broader area
+      (a district, a city, the whole country). Areas nest inside each other —
+      Cinco Esquinas is inside Barrios Altos, which is inside Lima, which is
+      inside Perú — so the map only shows one level of that nesting at a time:
+      zoom in and a broad area gives way to the smaller places inside it.
+    </p>
+
+    <div class="stat-row" id="stat-row">
+      <span><strong id="stat-places">–</strong> real places</span>
+      <span><strong id="stat-areas">–</strong> as areas</span>
+      <span><strong id="stat-points">–</strong> as points</span>
+      <span><strong id="stat-mentions">–</strong> literary mentions</span>
+      <span><strong>1</strong> novel — <em>Cinco esquinas</em> (2016)</span>
+    </div>
+
+  </article>
+
+  <div class="map-frame" id="map-frame">
+    <div class="place-panel">
+      <div class="place-search">
+        <input type="search" id="place-search" placeholder="Filter places…" aria-label="Filter places">
+      </div>
+      <ul class="place-list" id="place-list"></ul>
+    </div>
+    <div class="map-viewport">
+      <div id="map" role="application" aria-label="Map of places mentioned in Cinco esquinas"></div>
+      <div class="map-toolbar">
+        <button type="button" class="map-btn btn-expand" id="btn-expand">⤢ Expand</button>
+        <button type="button" class="map-btn btn-close" id="btn-close">✕ Close</button>
+      </div>
+      <div class="map-legend">
+        <span class="legend-title">Legend</span>
+        <span class="row"><span class="legend-swatch-area"></span> Area — zoom in to see what's inside</span>
+        <span class="row"><span class="legend-swatch-point"></span> Point — precise place</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="map-caption">
+    Base map © OpenStreetMap contributors, via Leaflet. Area circles are
+    approximate, sized by scale (country → city → district → street) — not
+    exact boundaries. A broad area's popup summarizes what's nested inside it
+    and can zoom you straight in; expand the map for the full place hierarchy
+    alongside it.
+  </p>
+
+  <footer class="site-footer">
+    <p>Ariana Sánchez Domínguez — updated in 2026</p>
+  </footer>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+async function initMap() {
+  if (new URLSearchParams(location.search).has("embed")) {
+    document.body.classList.add("is-embedded");
+  }
+
+  const PLACES = await fetch("Data/cinco-esquinas-map/places.json").then((r) => r.json());
+
+  // ---- Zoom bands per tier. A place's own minZoom comes straight from this
+  // table; its maxZoom is derived (not hand-authored) from whether it has
+  // children: if it does, it hides right before the children's tier would
+  // start appearing; if it doesn't, it has no forced upper bound. ----
+  const TIER_MIN_ZOOM = { country: 0, region: 8, district: 13, local: 16, point: 16 };
+  const MAP_MAX_ZOOM = 19;
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  const placesByName = {};
+  PLACES.forEach((p) => { placesByName[p.name] = p; });
+
+  const childrenByParent = {};
+  PLACES.forEach((p) => {
+    if (p.parent) {
+      (childrenByParent[p.parent] = childrenByParent[p.parent] || []).push(p);
+    }
+  });
+
+  PLACES.forEach((p) => {
+    p.minZoom = TIER_MIN_ZOOM[p.tier];
+    const kids = childrenByParent[p.name];
+    p.maxZoom = kids && kids.length
+      ? Math.min(...kids.map((k) => TIER_MIN_ZOOM[k.tier])) - 1
+      : MAP_MAX_ZOOM;
+  });
+
+  const totalMentionsCache = {};
+  function totalMentions(place) {
+    if (totalMentionsCache[place.name] !== undefined) return totalMentionsCache[place.name];
+    let total = place.mentions.length;
+    (childrenByParent[place.name] || []).forEach((k) => { total += totalMentions(k); });
+    totalMentionsCache[place.name] = total;
+    return total;
+  }
+
+  document.getElementById("stat-places").textContent = PLACES.length;
+  document.getElementById("stat-areas").textContent = PLACES.filter((p) => p.kind === "area").length;
+  document.getElementById("stat-points").textContent = PLACES.filter((p) => p.kind === "point").length;
+  document.getElementById("stat-mentions").textContent =
+    PLACES.reduce((sum, p) => sum + p.mentions.length, 0);
+
+  const map = L.map("map", { scrollWheelZoom: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: MAP_MAX_ZOOM,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  // Only point-markers cluster (they behave like ordinary pins). Areas are
+  // real-world-scaled circles; clustering a country-sized circle into a
+  // bubble would misrepresent it, so areas are added/removed from the map
+  // directly instead.
+  const clusters = L.markerClusterGroup({
+    maxClusterRadius: 42,
+    iconCreateFunction: (cluster) => L.divIcon({
+      html: `<div>${cluster.getChildCount()}</div>`,
+      className: "marker-cluster marker-cluster-custom",
+      iconSize: L.point(38, 38)
+    })
+  });
+  map.addLayer(clusters);
+
+  // Google-Maps-style teardrop pin for precise (point-tier) places, shared
+  // across every marker since divIcon just clones the HTML per instance.
+  const pinIcon = L.divIcon({
+    className: "place-pin",
+    html: `<svg viewBox="0 0 24 32" width="24" height="32">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z"
+            fill="#2f6f62" stroke="#f3f1e8" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="4.5" fill="#f3f1e8"/>
+    </svg>`,
+    iconSize: [24, 32],
+    iconAnchor: [12, 32],
+    popupAnchor: [0, -30]
+  });
+
+  const AREA_FILL_STYLE = { color: "#2f6f62", weight: 1.5, fillColor: "#2f6f62", fillOpacity: 0.12 };
+  const AREA_LINE_STYLE = { color: "#2f6f62", weight: 4, opacity: 0.75, lineCap: "round" };
+  const LINE_GEOM_TYPES = new Set(["LineString", "MultiLineString"]);
+
+  // What a place actually reads as on the map — not just its raw "area"/
+  // "point" data kind, which doesn't distinguish a real polygon (a
+  // neighbourhood shape) from a street rendered as a line, or from a
+  // local-tier place that fell back to a pin because no boundary was found.
+  function displayKind(place) {
+    if (place.kind === "point") return "point";
+    if (place.boundary && LINE_GEOM_TYPES.has(place.boundary.type)) return "street";
+    if (!place.boundary && place.tier === "local") return "point";
+    return "area";
+  }
+
+  function popupHtml(place) {
+    const kids = childrenByParent[place.name];
+    if (kids && kids.length) {
+      const rows = kids.slice()
+        .sort((a, b) => totalMentions(b) - totalMentions(a))
+        .map((k) => `
+          <li>
+            <button type="button" data-goto="${escapeHtml(k.name)}">${escapeHtml(k.name)}</button>
+            <span class="child-count">${totalMentions(k)}</span>
+          </li>
+        `).join("");
+      const nested = totalMentions(place) - place.mentions.length;
+      return `
+        <div class="popup-title">${escapeHtml(place.name)}</div>
+        <span class="popup-meta">${place.mentions.length} direct mention${place.mentions.length === 1 ? "" : "s"} · ${nested} more in ${kids.length} place${kids.length === 1 ? "" : "s"} within it</span>
+        <ul class="popup-children">${rows}</ul>
+        <button type="button" class="popup-zoom-btn" data-zoomin="${escapeHtml(place.name)}">Zoom in ↓ to explore</button>
+      `;
+    }
+    const sentences = place.mentions.map((m) => `
+      <div class="popup-sentence">
+        <q>${escapeHtml(m.sentence)}</q>
+        <span class="tag">${escapeHtml(m.book)}</span>
+      </div>
+    `).join("");
+    const kindLabel = { area: "Area", point: "Point", street: "Street" }[displayKind(place)];
+    return `
+      <div class="popup-title">${escapeHtml(place.name)}</div>
+      <span class="popup-meta">${kindLabel} · ${place.mentions.length} mention${place.mentions.length === 1 ? "" : "s"}</span>
+      <div class="popup-sentences">${sentences}</div>
+    `;
+  }
+
+  const layersByName = {};
+  const bounds = [];
+
+  PLACES.forEach((place) => {
+    let layer;
+    if (place.kind === "point") {
+      layer = L.marker([place.lat, place.lon], { icon: pinIcon });
+    } else if (place.boundary) {
+      // Real geometry fetched + matched offline from OSM/Nominatim (by OSM
+      // relation ID for admin boundaries, or by a bounded name search + the
+      // nearest-match heuristic for streets and informal named places — see
+      // the data-prep scripts). Streets come back as a line, not a filled
+      // shape, so they're styled as a stroke instead of an area fill.
+      const isLine = LINE_GEOM_TYPES.has(place.boundary.type);
+      layer = L.geoJSON(place.boundary, { style: isLine ? AREA_LINE_STYLE : AREA_FILL_STYLE });
+    } else if (place.tier === "local") {
+      // No real geometry found for this specific street/place (Nominatim
+      // has nothing usable — see the data-prep script's rejection log). A
+      // circle here would misrepresent a small, specific place, so it gets
+      // a pin at its known coordinate instead, same as a point-tier place.
+      layer = L.marker([place.lat, place.lon], { icon: pinIcon });
+    } else {
+      layer = L.circle([place.lat, place.lon], { radius: place.radiusM, ...AREA_FILL_STYLE });
+    }
+    layer.bindPopup(popupHtml(place), { maxWidth: 340 });
+    layersByName[place.name] = layer;
+    bounds.push([place.lat, place.lon]);
+  });
+
+  // ---- Zoom-driven visibility: recompute which layers should be on the map
+  // whenever the zoom settles, diffing against what's already shown so we
+  // only touch layers that actually changed state. ----
+  let visibleNow = new Set();
+
+  function updateVisibleLayers() {
+    const z = map.getZoom();
+    const nextVisible = new Set(
+      PLACES.filter((p) => z >= p.minZoom && z <= p.maxZoom).map((p) => p.name)
+    );
+
+    PLACES.forEach((place) => {
+      const layer = layersByName[place.name];
+      const shouldShow = nextVisible.has(place.name);
+      const isShown = visibleNow.has(place.name);
+      if (shouldShow && !isShown) {
+        if (place.kind === "point") clusters.addLayer(layer); else layer.addTo(map);
+      } else if (!shouldShow && isShown) {
+        if (place.kind === "point") clusters.removeLayer(layer); else map.removeLayer(layer);
+      }
+    });
+
+    visibleNow = nextVisible;
+  }
+
+  map.on("zoomend", updateVisibleLayers);
+  map.fitBounds(bounds, { padding: [24, 24] });
+  updateVisibleLayers();
+
+  // Enable scroll-zoom only while the pointer is over the map, so page
+  // scrolling isn't hijacked while reading.
+  const mapContainer = map.getContainer();
+  mapContainer.addEventListener("mouseenter", () => map.scrollWheelZoom.enable());
+  mapContainer.addEventListener("mouseleave", () => map.scrollWheelZoom.disable());
+
+  // Popup buttons ("zoom to this child" / "zoom in to explore") are inserted
+  // as HTML strings, so wire their clicks via delegation once each popup opens.
+  map.on("popupopen", (e) => {
+    const el = e.popup.getElement();
+    if (!el) return;
+    el.querySelectorAll("[data-goto]").forEach((btn) => {
+      btn.addEventListener("click", () => goToPlace(btn.dataset.goto));
+    });
+    el.querySelectorAll("[data-zoomin]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const place = placesByName[btn.dataset.zoomin];
+        if (place) map.flyTo([place.lat, place.lon], place.maxZoom + 1);
+      });
+    });
+  });
+
+  function goToPlace(name) {
+    const place = placesByName[name];
+    const layer = layersByName[name];
+    if (!place || !layer) return;
+
+    if (typeof layer.getBounds === "function") {
+      // Areas (circle, real polygon, or street line) all expose real
+      // bounds — fit to the actual shape instead of a fixed zoom guess, so
+      // "Perú" frames Perú, not the whole world.
+      map.flyToBounds(layer.getBounds(), { padding: [24, 24], maxZoom: place.maxZoom });
+    } else {
+      const z = map.getZoom();
+      const target = (z >= place.minZoom && z <= place.maxZoom) ? z : place.minZoom + 1;
+      map.flyTo([place.lat, place.lon], Math.min(target, place.maxZoom));
+    }
+
+    map.once("moveend", () => {
+      updateVisibleLayers();
+      if (map.getZoom() < place.minZoom) map.setZoom(place.minZoom);
+      if (place.kind === "point") {
+        clusters.zoomToShowLayer(layer, () => layer.openPopup());
+      } else {
+        layer.openPopup();
+      }
+    });
+  }
+
+  // ---- Sidebar tree: same parent/child structure as the map. Collapsible
+  // per node (chevron on the right) so a big branch like Lima can be closed
+  // to explore other areas without scrolling past all of its contents. ----
+  const listEl = document.getElementById("place-list");
+  const searchInput = document.getElementById("place-search");
+
+  // Start with only the top level open (Perú's direct children: Lima and
+  // the standalone regional cities) — everything deeper starts collapsed.
+  const collapsedNodes = new Set();
+  PLACES.filter((p) => !p.parent).forEach((root) => {
+    (childrenByParent[root.name] || []).forEach((child) => collapsedNodes.add(child.name));
+  });
+
+  function isSearchActive() {
+    return searchInput.value.trim().length > 0;
+  }
+
+  function renderNode(place, depth, ignoreCollapse) {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "tree-row";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "place-btn";
+    btn.dataset.place = place.name.toLowerCase();
+    btn.style.paddingLeft = `calc(var(--space-2) + ${depth * 0.9}em)`;
+    btn.innerHTML = `
+      <span class="name">${escapeHtml(place.name)}</span>
+      <span class="kind">${displayKind(place)}</span>
+      <span class="count">${totalMentions(place)}</span>
+    `;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".place-list .place-btn.is-active")
+        .forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      goToPlace(place.name);
+    });
+    row.appendChild(btn);
+
+    const kids = (childrenByParent[place.name] || [])
+      .slice()
+      .sort((a, b) => totalMentions(b) - totalMentions(a));
+    const collapsed = !ignoreCollapse && collapsedNodes.has(place.name);
+
+    if (kids.length) {
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "tree-toggle";
+      toggle.textContent = collapsed ? "▸" : "▾";
+      toggle.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} ${place.name}`);
+      toggle.addEventListener("click", () => {
+        if (collapsedNodes.has(place.name)) collapsedNodes.delete(place.name);
+        else collapsedNodes.add(place.name);
+        rebuildTree(isSearchActive());
+        applySearchFilter();
+      });
+      row.appendChild(toggle);
+    }
+
+    li.appendChild(row);
+    listEl.appendChild(li);
+
+    if (kids.length && !collapsed) {
+      kids.forEach((child) => renderNode(child, depth + 1, ignoreCollapse));
+    }
+  }
+
+  function rebuildTree(ignoreCollapse) {
+    listEl.innerHTML = "";
+    PLACES.filter((p) => !p.parent).forEach((root) => renderNode(root, 0, ignoreCollapse));
+  }
+
+  function applySearchFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    let anyVisible = false;
+    listEl.querySelectorAll("li:not(.no-results)").forEach((li) => {
+      const btn = li.querySelector(".place-btn");
+      const match = !q || btn.dataset.place.includes(q);
+      li.style.display = match ? "" : "none";
+      if (match) anyVisible = true;
+    });
+    let empty = listEl.querySelector(".no-results");
+    if (q && !anyVisible) {
+      if (!empty) {
+        empty = document.createElement("li");
+        empty.className = "no-results";
+        empty.textContent = "No places match.";
+        listEl.appendChild(empty);
+      }
+    } else if (empty) {
+      empty.remove();
+    }
+  }
+
+  rebuildTree(false);
+
+  // While searching, expand everything so a match isn't hidden behind a
+  // collapsed ancestor; revert to the remembered collapse state once cleared.
+  searchInput.addEventListener("input", () => {
+    rebuildTree(isSearchActive());
+    applySearchFilter();
+  });
+
+  // ---- Fullscreen toggle: repositions the existing map via CSS instead of
+  // re-parenting it, then asks Leaflet to recompute its layout. ----
+  const frame = document.getElementById("map-frame");
+  const btnExpand = document.getElementById("btn-expand");
+  const btnClose = document.getElementById("btn-close");
+
+  function resyncMap() {
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+      map.fitBounds(bounds, { padding: [24, 24] });
+      updateVisibleLayers();
+    });
+  }
+
+  function openFullscreen() {
+    frame.classList.add("is-fullscreen");
+    document.body.classList.add("map-locked");
+    resyncMap();
+  }
+
+  function closeFullscreen() {
+    frame.classList.remove("is-fullscreen");
+    document.body.classList.remove("map-locked");
+    resyncMap();
+  }
+
+  btnExpand.addEventListener("click", openFullscreen);
+  btnClose.addEventListener("click", closeFullscreen);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && frame.classList.contains("is-fullscreen")) closeFullscreen();
+  });
+}
+initMap();
+</script>
+
+</body>
+</html>
