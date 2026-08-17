@@ -42,10 +42,22 @@ import sys
 import time
 import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.dirname(HERE)  # Data/
-CSV_PATH = os.path.join(DATA_DIR, "MVLL-Locations-Valid.csv")
-OUT_PATH = os.path.join(os.path.dirname(HERE), "cinco-esquinas-map", "places.json")
+HERE = os.path.dirname(os.path.abspath(__file__))          # Data/cinco-esquinas-map/scripts
+CINCO_DIR = os.path.dirname(HERE)                          # Data/cinco-esquinas-map
+DATA_DIR = os.path.dirname(CINCO_DIR)                       # Data/
+REPO_ROOT = os.path.dirname(DATA_DIR)                        # the repo root
+OUT_PATH = os.path.join(CINCO_DIR, "places.json")
+
+# The curated CSV (with editorial columns like Comments/Entity Check) is
+# deliberately NOT published in this public repo — only places.json, the
+# minimal data the map actually needs, is. Default: a private sibling
+# folder next to this repo (../arianasanchezdominguez-private-data/); set
+# MVLL_CSV_PATH to override.
+CSV_PATH = os.environ.get(
+    "MVLL_CSV_PATH",
+    os.path.join(os.path.dirname(REPO_ROOT), "arianasanchezdominguez-private-data", "MVLL-Locations-Valid.csv"),
+)
+CSV_PATH = os.path.abspath(CSV_PATH)
 CACHE_DIR = os.path.join(HERE, ".cache")  # raw API responses, so re-runs don't re-fetch
 os.makedirs(CACHE_DIR, exist_ok=True)
 

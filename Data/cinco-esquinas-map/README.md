@@ -1,11 +1,22 @@
 # Data for cinco-esquinas-map.html
 
+**Data use:** this dataset is © Ariana Sánchez Domínguez, published here
+only to power the interactive map on this site. It's publicly *viewable*
+because the map has to show it to work — that's not an invitation to
+scrape or redistribute it. Ask before reusing it elsewhere.
+
 ## `places.json`
 
 The dataset behind [`cinco-esquinas-map.html`](../../cinco-esquinas-map.html) —
-one entry per place mentioned in *Cinco esquinas*, curated from
-[`../MVLL-Locations-Valid.csv`](../MVLL-Locations-Valid.csv). The page `fetch()`es
-this file at load time; nothing else in the map is fetched live.
+one entry per place mentioned in *Cinco esquinas*, curated from a source CSV
+that is **deliberately not published in this repo** (see below). The page
+`fetch()`es this file at load time; nothing else in the map is fetched live.
+
+This is already a reduced view of the underlying curation: the source CSV
+also has `Entity`, `Place Check`, `Coor Check`, and free-text `Comments`
+columns (editorial working notes) that aren't in `places.json` and aren't
+needed by the map — only what's actually shown on the page (place names,
+coordinates, sentences, hierarchy) is published.
 
 Each place has:
 
@@ -38,6 +49,12 @@ Requires internet access and Node.js (`npx mapshaper` is used to simplify
 large polygons — no separate install needed, `npx` fetches it on demand) to
 **run**. The output file it produces does not — `places.json` is a static
 file, safe to commit, and that's all the published page needs.
+
+The source CSV (`MVLL-Locations-Valid.csv`, the human-curated place
+mentions with editorial columns) lives **outside this repo**, in a private
+sibling folder next to it: `../arianasanchezdominguez-private-data/` (set
+the `MVLL_CSV_PATH` environment variable to point elsewhere). It is not
+published — only the reduced `places.json` this script produces is.
 
 ```
 python Data/cinco-esquinas-map/scripts/build_places.py

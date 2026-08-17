@@ -1,0 +1,10 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Excel lock files
+~$*.xlsx
+
+# Raw API responses cached by Data/cinco-esquinas-map/scripts/build_places.py —
+# regenerable, not meant to be committed (some of it mirrors the private CSV).
+Data/cinco-esquinas-map/scripts/.cache/
